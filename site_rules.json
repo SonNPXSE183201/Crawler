@@ -1,0 +1,14 @@
+{
+  "_huong_dan": "Thêm web mới: khóa là 1 phần tên miền. Các trường đều không bắt buộc (CSS selector). js=true nếu web cần trình duyệt. workers = số luồng, delay = giây nghỉ.",
+  "_vi_du_web_moi.com": {
+    "name": "Tên hiển thị",
+    "novel_title": "h1",
+    "chapter_list": ".list-chapter a",
+    "content": "#chapter-content",
+    "title": ".chapter-title",
+    "next": "a#next-chapter",
+    "js": false,
+    "workers": 3,
+    "delay": 0.5
+  }
+}

@@ -1,0 +1,9 @@
+# Dữ liệu cào về & file sinh ra khi chạy
+output/
+video_dai_niet_ban/
+.browser_profile/
+__pycache__/
+*.pyc
+*.tmp
+*.log
+.env

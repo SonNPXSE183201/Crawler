@@ -1,0 +1,5 @@
+beautifulsoup4>=4.12.0
+lxml>=5.0
+tqdm>=4.66.0
+curl_cffi>=0.7
+playwright>=1.45  # tuỳ chọn: chỉ cần cho web chặn bot / dùng JavaScript (dùng Chrome có sẵn trên máy)
