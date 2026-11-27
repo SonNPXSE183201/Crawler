@@ -49,10 +49,21 @@ def _uncensor(text):
         return text
 
 
+def _clean_watermark(text):
+    try:
+        if ROOT not in sys.path:
+            sys.path.insert(0, ROOT)
+        from clean_watermark import clean_watermark_text
+        cleaned, _ = clean_watermark_text(text)
+        return cleaned
+    except Exception:
+        return text
+
+
 def save_chapter(out_dir, n, raw_title, paragraphs):
     title = X.clean_chapter_title(raw_title)
     header = f"Chương {n}: {title}" if title else f"Chương {n}"
-    content = _uncensor(header + "\n\n" + "\n\n".join(paragraphs) + "\n")
+    content = _clean_watermark(_uncensor(header + "\n\n" + "\n\n".join(paragraphs) + "\n"))
     tmp = chapter_path(out_dir, n) + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(content)

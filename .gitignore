@@ -1,6 +1,6 @@
 # Dữ liệu cào về & file sinh ra khi chạy
 output/
-video_dai_niet_ban/
+video_*/
 .browser_profile/
 __pycache__/
 *.pyc

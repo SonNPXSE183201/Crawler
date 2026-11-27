@@ -51,6 +51,24 @@ JUNK_LINE_RE = re.compile(
     r"báo lỗi chương|bình luận|ủng hộ tác giả|donate|^\s*-{3,}\s*$|^\*{3,}$|"
     r"请收藏|天才一秒记住|最新章节|手机阅读|本章未完|点击下一页)", re.I)
 
+INLINE_WATERMARK_RE = re.compile(
+    "|".join(
+        f"(?:{p})"
+        for p in [
+            r"Bạn đang xem truyện được sao chép tại\s*:?\s*(?:https?://)?(?:www\.)?(?:Truy[ệe]n\s*FULL|TruyenFull(?:\.vn)?|TruyệnFULL(?:\.vn)?)(?:\s*chấm\s*c\.o\.m)?",
+            r"Bạn đang xem tại\s*(?:Truy[ệe]n\s*FULL|TruyenFull(?:\.vn)?|TruyệnFULL(?:\.vn)?)(?:\s*-\s*(?:https?://)?(?:www\.)?(?:Truy[ệe]n\s*FULL|TruyenFull(?:\.vn)?|TruyệnFULL(?:\.vn)?))?",
+            r"Bạn đang đọc (?:truyện|chuyện) tại\s*:?\s*(?:https?://)?(?:www\.)?(?:Truy[ệe]n\s*FULL|TruyenFull(?:\.vn)?|TruyệnFULL(?:\.vn)?)(?:\s*-\s*(?:https?://)?(?:www\.)?(?:Truy[ệe]n\s*FULL|TruyenFull(?:\.vn)?|TruyệnFULL(?:\.vn)?))?",
+            r"Đọc Truy[ệe]n Online mới nhất ở\s*(?:https?://)?(?:www\.)?(?:Truy[ệe]n\s*FULL|TruyenFull(?:\.vn)?|TruyệnFULL(?:\.vn)?)",
+            r"(?:Truy[ệe]n|Text)\s+được\s+(?:copy|lấy|sao chép)\s+tại\s*:?\s*(?:https?://)?(?:www\.)?(?:Truy[ệe]n\s*FULL|TruyenFull(?:\.vn)?|TruyệnFULL(?:\.vn)?)(?:\s*chấm\s*c\.o\.m)?",
+            r"Nguồn(?:\s+(?:tại|truyện))?\s*:?\s*(?:https?://)?(?:www\.)?(?:Truy[ệe]n\s*FULL|TruyenFull(?:\.vn)?|TruyệnFULL(?:\.vn)?)",
+            r"xem\s+tại\s*:?\s*(?:https?://)?(?:www\.)?(?:Truy[ệe]n\s*FULL|TruyenFull(?:\.vn)?|TruyệnFULL(?:\.vn)?)",
+            r"nguồn\s+(?:truyện\s+)?t[\s.]*u[\s.]*n[\s.]*g[\s.]*h[\s.]*o[\s.]*a[\s.]*n[\s.]*h(?:\s*\(\.\)|\s*\.)?\s*c[\s.]*o[\s.]*m",
+            r"(?:https?://)?(?:www\.)?(?:Truy[ệe]n\s*FULL|TruyenFull\.vn|TruyệnFULL\.vn)(?:\s*chấm\s*c\.o\.m)?",
+        ]
+    ),
+    re.I,
+)
+
 LOCK_RE = re.compile(
     r"(chương (này )?(đã )?bị khóa|chương vip|mua chương|mở khóa chương|đăng nhập để (đọc|xem)|"
     r"nội dung chương này hiện chưa có|chương này chưa được|cần đăng nhập|vui lòng đăng nhập)", re.I)
@@ -106,7 +124,9 @@ def element_to_paragraphs(el):
     text = text.replace("\xa0", " ").replace("　", " ").replace("​", "")
     paras, prev = [], None
     for line in text.split("\n"):
-        line = re.sub(r"[ \t]+", " ", line).strip()
+        line = INLINE_WATERMARK_RE.sub("", line)
+        line = re.sub(r"[ \t]+", " ", line)
+        line = re.sub(r"\s+([.,!?;:])", r"\1", line).strip()
         if not line or line == prev:
             continue
         if len(line) < 120 and JUNK_LINE_RE.search(line):
