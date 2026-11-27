@@ -15,6 +15,8 @@ Hướng dẫn từng bước cho người không rành kỹ thuật. Tổng qua
 8. [Web khó: chặn bot, captcha, nhà mạng chặn](#8-web-khó-chặn-bot-captcha-nhà-mạng-chặn)
 9. [Thêm một trang web mới](#9-thêm-một-trang-web-mới)
 10. [Xử lý lỗi thường gặp](#10-xử-lý-lỗi-thường-gặp)
+11. [Lọc watermark trên truyện đã cào sẵn (`clean_watermark.py`)](#11-lọc-watermark-trên-truyện-đã-cào-sẵn-clean_watermarkpy)
+12. [Tự động tạo Kịch bản, Thumbnails & Video (`novel-video-production`)](#12-tự-động-tạo-kịch-bản-thumbnails--video-novel-video-production)
 
 ---
 
@@ -210,3 +212,47 @@ Mọi trường đều không bắt buộc; trường nào bỏ trống thì too
 | `Không tìm thấy nội dung chương` | Thêm selector `content` cho web đó vào `site_rules.json`. |
 | Tiếng Việt lỗi font trong cửa sổ đen | Dùng `run_cao_truyen.bat` (đã bật UTF-8), hoặc mở bằng Windows Terminal. |
 | Nội dung chương lặp lại chương trước | Do **web nguồn** đăng trùng, ví dụ truyendich.space. Đổi sang nguồn khác. |
+
+---
+
+## 11. Lọc watermark trên truyện đã cào sẵn (`clean_watermark.py`)
+
+Từ bản cập nhật mới, `novel_tool/extract.py` và `novel_tool/engine.py` đã tự động cắt bỏ các dòng/cụm watermark quảng cáo (`Truyện được copy tại Truyện FULL`, `Text được lấy tại Truyện FULL`, `Bạn đang xem truyện được sao chép tại: TruyenFull.vn chấm c.o.m`, `Nguồn tại http://Truyện FULL`, `nguồn t.u.n.g h.o.a.n.h (.) c.o.m`…) ngay lúc cào về.
+
+Nếu bạn có thư mục truyện đã tải từ trước, dùng lệnh sau để làm sạch hàng loạt:
+
+```bash
+# Kiểm tra thử (chưa sửa file)
+python clean_watermark.py --path "output/<Tên Truyện>" --dry-run
+
+# Lọc sạch toàn bộ các file Chuong_*.txt trong thư mục
+python clean_watermark.py --path "output/<Tên Truyện>"
+```
+
+---
+
+## 12. Tự động tạo Kịch bản, Thumbnails & Video (`novel-video-production`)
+
+Workspace đã cài sẵn skill **[`.agents/skills/novel-video-production/SKILL.md`](.agents/skills/novel-video-production/SKILL.md)** để biến bất kỳ bộ truyện nào trong `output/` thành bộ sản phẩm hoàn chỉnh gồm kịch bản phân cảnh, ảnh scene sạch không chữ, bộ thumbnail tiếng Việt và video `.mp4`.
+
+**Chuẩn bị môi trường (làm 1 lần):**
+- Cài thư viện ảnh: `pip install pillow numpy`
+- Cài `ffmpeg` (và `ffprobe`) vào PATH (trên Windows có thể cài qua `winget install Gyan.FFmpeg`).
+- Đã đăng nhập `agy` CLI (khuyên dùng; khi hết quota, skill tự fallback sang `claude` CLI cho phần viết kịch bản và `codex` CLI cho phần sinh ảnh với model/effort tiết kiệm token).
+
+**Cách prompt ngắn gọn hằng ngày:**
+```text
+Dùng skill novel-video-production làm kịch bản, thumbnails và video cho bộ @output/<Tên Truyện>, chia 20 chương/phần.
+```
+*(Thay `20` bằng bất kỳ số chương/phần nào bạn muốn: `15`, `20`, `30`, `40`, `50`…)*
+
+**Cách dùng `/goal` cho bộ truyện dài (chạy tự động xuyên suốt đến khi xong hẳn):**
+```text
+/goal Dùng skill novel-video-production làm trọn gói kịch bản, thumbnails và video cho bộ @output/<Tên Truyện>, chia 20 chương/phần. Chỉ kết thúc khi đã: (1) lọc sạch 0 watermark toàn bộ chương, (2) sinh xong kịch bản JSON (ưu tiên agy, hết quota sang claude), (3) sinh và kiểm tra QA đủ toàn bộ ảnh scene sạch không chữ (ưu tiên agy, hết quota sang codex), (4) render đủ bộ thumbnails chuẩn Chuong_XXXX-YYYY_TapZZZ.png, và (5) xuất xong video .mp4 1080p 30fps không âm thanh có nhãn tên truyện góc trên bên phải đã kiểm tra bằng ffprobe và ảnh khung hình.
+```
+
+**Đầu ra được tạo tại `video_<ten_truyen>/`:**
+- `production/kich_ban_scenes.md`, `parts_manifest.json`, `scene_order.csv`, `thumbnails.json`
+- `art/p01.png`… — ảnh minh họa 16:9 sạch, tuyệt đối không chữ
+- `thumbnails/Chuong_XXXX-YYYY_TapZZZ.png` — bộ thumbnail 1920×1080 chữ hook tiếng Việt + badge `PHẦN XX`
+- `<Ten_Truyen>_<N>_Scenes.mp4` — video 1920×1080 30fps H.264 không âm thanh (Ken Burns + crossfade `0.5s`) có pill tên truyện ở góc trên bên phải.

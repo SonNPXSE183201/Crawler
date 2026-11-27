@@ -15,11 +15,12 @@ Dán link truyện → tool tự nhận diện trang web, lấy **danh sách ch�
 | 🛡️ **Vượt chặn bot** | HTTP giả lập trình duyệt Chrome (`curl_cffi`) qua được phần lớn Cloudflare; gặp tường chống bot hoặc trang dựng bằng JavaScript thì **tự mở Chrome thật** (Playwright). |
 | ⚡ **Nhanh & an toàn** | Tải đa luồng, giới hạn tốc độ theo từng web, tự nghỉ khi bị 403/429, tự thử lại. |
 | ♻️ **Chạy tiếp (resume)** | Chạy lại lệnh cũ chỉ tải chương còn thiếu; chương nào đổi link nguồn sẽ tự tải lại; chương lỗi ghi vào `_loi.txt`. |
-| 🧹 **Nội dung sạch** | Lọc quảng cáo, watermark, nút điều hướng; tự khôi phục từ bị che dấu `*`. |
+| 🧹 **Nội dung sạch** | Tự động lọc quảng cáo, nút điều hướng, watermark dính trong câu (`Truyện FULL`, `TruyenFull.vn`, `chấm c.o.m`, `tunghoanh`...); tự khôi phục từ bị che dấu `*`. |
 | 📄 **Gộp file** | Tuỳ chọn `--merge` gộp các chương thành 1 file FULL để biên tập. |
 | 🧩 **Thêm web không cần code** | Khai báo CSS selector trong `site_rules.json`. |
+| 🎬 **Tự động dựng Thumbnails & Video** | Skill `.agents/skills/novel-video-production/` biến truyện đã cào thành kịch bản phân cảnh, ảnh scene sạch không chữ, bộ thumbnail tiếng Việt và video `.mp4` 1080p không âm thanh. |
 
-Đã kiểm chứng: **truyenhoan.com**, **truyenfull.live** (bộ *Đại Niết Bàn* 956/956 chương, đúng thứ tự, không trùng, không thiếu).
+Đã kiểm chứng: **truyenhoan.com**, **truyenfull.live** (bộ *Đại Niết Bàn* 956/956 chương, bộ *Bí Thư Trùng Sinh* 2.771/2.771 chương, đúng thứ tự, không trùng, không thiếu).
 
 ---
 
@@ -82,6 +83,40 @@ output/
 
 ---
 
+## 🧹 Lọc watermark cho truyện đã cào sẵn (`clean_watermark.py`)
+
+Tool cào hiện tự động lọc watermark inline ngay trong `extract.py` và `engine.py`. Với các bộ truyện đã tải từ trước, chạy thêm:
+
+```bash
+python clean_watermark.py --path "output/<Tên Truyện>" --dry-run   # kiểm tra thử
+python clean_watermark.py --path "output/<Tên Truyện>"             # lọc sạch ghi đè
+```
+
+---
+
+## 🎬 Workflow tự động dựng Kịch bản, Thumbnails & Video (`novel-video-production`)
+
+Skill dựng sẵn tại [`.agents/skills/novel-video-production/SKILL.md`](.agents/skills/novel-video-production/SKILL.md) tự động biến một bộ truyện trong `output/<Tên Truyện>` thành:
+- **Kịch bản phân cảnh** chia theo số chương/phần tuỳ chọn (`kich_ban_scenes.md`, `parts_manifest.json`, `thumbnails.json`).
+- **Bộ ảnh scene sạch (không chữ)** 16:9 (`art/p01.png`…) + **bảng QA**.
+- **Bộ thumbnails 1920×1080** chuẩn style chữ hook tiếng Việt + badge `PHẦN XX` đặt tên `thumbnails/Chuong_XXXX-YYYY_TapZZZ.png`.
+- **Video `.mp4` 1080p 30fps không âm thanh** (Ken Burns + crossfade `0.5s`) có nhãn tên truyện ở góc trên bên phải.
+
+**Yêu cầu bổ sung:** `pip install pillow numpy`, `ffmpeg` trong PATH, và `agy` CLI (tự fallback sang `claude` / `codex` khi hết quota):
+
+| Công đoạn | CLI ưu tiên | Model & Effort tiết kiệm | CLI dự phòng (khi hết quota) |
+|---|---|---|---|
+| Viết kịch bản / JSON | `agy` | `gemini-3.8-flash-medium` | `claude` (`--model sonnet --effort low`) |
+| Sinh ảnh scene không chữ | `agy` (`image-generator`) | `gemini-3.8-flash-low` | `codex exec` (`model_reasoning_effort="low"`) |
+
+**Prompt mẫu khi dùng với AI Agent:**
+```text
+Dùng skill novel-video-production làm kịch bản, thumbnails và video cho bộ @output/<Tên Truyện>, chia 20 chương/phần.
+```
+*(Hoặc mở đầu bằng `/goal` để agent tự chạy xuyên suốt và kiểm tra đủ `ffprobe` + QA ảnh trước khi kết thúc.)*
+
+---
+
 ## 🗂️ Cấu trúc mã nguồn
 
 ```
@@ -90,11 +125,16 @@ Crawler/
 ├── run_cao_truyen.bat     # nhấp đúp để chạy trên Windows
 ├── novel_tool/
 │   ├── fetcher.py         # tải trang: curl_cffi, tự chuyển Chrome (Playwright), rate-limit, retry
-│   ├── extract.py         # bóc nội dung, tiêu đề, nút chương sau, danh sách chương, sắp thứ tự
+│   ├── extract.py         # bóc nội dung, lọc watermark inline, tiêu đề, nút chương sau, danh sách chương
 │   ├── sites.py           # cấu hình từng web + bộ cào tự nhận diện
-│   └── engine.py          # điều phối: chọn chương, tải đa luồng, resume, lưu file, gộp file
+│   └── engine.py          # điều phối: chọn chương, tải đa luồng, resume, lọc & lưu file, gộp file
 ├── site_rules.json        # thêm/sửa web bằng CSS selector
 ├── clean_censor.py        # khôi phục từ bị che (*) khi lưu chương
+├── clean_watermark.py     # lọc watermark quảng cáo web truyện khỏi các file Chuong_*.txt
+├── .agents/skills/novel-video-production/
+│   ├── SKILL.md           # hướng dẫn & quy trình skill dựng kịch bản, thumbnails, video
+│   ├── resources/         # font Anton-Regular.ttf & ảnh tham chiếu phong cách style_ref.png
+│   └── scripts/           # 6 script tự động (digest, sinh kịch bản, sinh ảnh, thumbnail, video)
 └── requirements.txt
 ```
 
